@@ -1,0 +1,5 @@
+report-messaage = [
+    "{reporter} reported {reported}",
+    "Reason: {reason}",
+    "Test line"
+]

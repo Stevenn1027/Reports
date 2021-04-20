@@ -1,0 +1,8 @@
+<component name="ArtifactManager">
+  <artifact type="jar" build-on-make="true" name="Reports:jar">
+    <output-path>$USER_HOME$/Desktop/VelocityProxy/plugins</output-path>
+    <root id="archive" name="Reports.jar">
+      <element id="module-output" name="Reports" />
+    </root>
+  </artifact>
+</component>
