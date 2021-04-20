@@ -1,6 +1,16 @@
-#Use \n for new lines
-#Place holdesr are: {reporter} {reported} {server} {reason}
+# Use \n for new lines
+# Place holdesr are: {reporter} {reported} {server} {reason}
 report-message = "&a{reporter} reported {reported} \nReason: {reason} \nServer: {server}"
+
+correct-usage = "&eThe correct usage is /report [player] [reason]"
+player-not-online = "&eYou can not report an offline player"
+can-not-report-self = "&eYou can not report yourself"
+can-not-report-player = "&eThis player can not be reported"
+staff-alerted = "&eThank you for your report! Staff have been alerted"
+cooldown-message = "&eYou can not use this command for another &a{seconds} &eseconds"
+
+# How long should the report cooldown be in seconds?
+report-cooldown = 30
 
 # Discord webhook
 discord-webhook-enabled = false

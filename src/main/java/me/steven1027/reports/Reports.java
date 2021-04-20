@@ -9,6 +9,8 @@ import com.velocitypowered.api.plugin.Plugin;
 import com.velocitypowered.api.plugin.annotation.DataDirectory;
 import com.velocitypowered.api.proxy.ProxyServer;
 import me.steven1027.reports.commands.ReportCommand;
+import me.steven1027.reports.util.Util;
+import net.kyori.text.TextComponent;
 import org.slf4j.Logger;
 
 import java.io.File;
@@ -39,6 +41,11 @@ public class Reports {
         this.logger = logger;
         this.commandManager = commandManager;
         this.config = loadConfig(path);
+
+        server.getConsoleCommandSource().sendMessage(TextComponent.of("|"));
+        server.getConsoleCommandSource().sendMessage(Util.color("|  &6Reports &ev.1.0.0"));
+        server.getConsoleCommandSource().sendMessage(Util.color("|  &8Author - QuaccOnCracc"));
+        server.getConsoleCommandSource().sendMessage(TextComponent.of("|"));
     }
 
     @Subscribe

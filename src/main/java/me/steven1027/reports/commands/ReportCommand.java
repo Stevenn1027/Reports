@@ -11,12 +11,12 @@ import net.kyori.text.format.TextColor;
 import org.checkerframework.checker.nullness.qual.NonNull;
 
 import java.awt.*;
-import java.io.IOException;
 import java.util.*;
 
 public class ReportCommand implements Command {
 
     private final Reports plugin;
+    private final HashMap<UUID, Long> cooldown = new HashMap<UUID, Long>();
 
     public ReportCommand(Reports plugin) {
         this.plugin = plugin;
@@ -32,27 +32,42 @@ public class ReportCommand implements Command {
         final Player sender = (Player) source;
 
         if (args.length < 2) {
-            sender.sendMessage(TextComponent.of("The correct usage is: /report [player] [reason]").color(TextColor.RED));
+            sender.sendMessage(Util.color(plugin.getConfig().getString("correct-usage")));
+            return;
+        }
+
+        if (cooldown.get(sender.getUniqueId()) != null && cooldown.get(sender.getUniqueId()) > System.currentTimeMillis()) {
+            sender.sendMessage(Util.color(plugin.getConfig().getString("cooldown-message")
+                    .replace("{seconds}", String.valueOf((cooldown.get(sender.getUniqueId()) - System.currentTimeMillis()) / 1000))));
             return;
         }
 
         if (!plugin.getProxyServer().getPlayer(args[0]).isPresent()) {
-            sender.sendMessage(TextComponent.of("This player is not currently online!").color(TextColor.RED));
+            sender.sendMessage(Util.color(plugin.getConfig().getString("player-not-online")));
             return;
         }
 
         final Player target = plugin.getProxyServer().getPlayer(args[0]).get();
 
         if (target == sender) {
-            sender.sendMessage(TextComponent.of("You can not report yourself!").color(TextColor.RED));
+            sender.sendMessage(Util.color(plugin.getConfig().getString("can-not-report-self")));
             return;
         }
 
         if (target.hasPermission("reports.bypass")) {
-            sender.sendMessage(TextComponent.of("You can not report this player!").color(TextColor.RED));
+            sender.sendMessage(Util.color(plugin.getConfig().getString("can-not-report-player")));
             return;
         }
 
+        this.sendStaffMessage(sender, target, args);
+        cooldown.put(sender.getUniqueId(), System.currentTimeMillis() + (plugin.getConfig().getLong("report-cooldown") * 1000));
+        sender.sendMessage(Util.color(plugin.getConfig().getString("staff-alerted")));
+
+        if (plugin.getConfig().getBoolean("discord-webhook-enabled"))
+            this.sendDiscordWebHook(sender, target, args);
+    }
+
+    private void sendStaffMessage(Player sender, Player target, String[] args) {
         final String staffMessage = plugin.getConfig().getString("report-message")
                 .replace("{reporter}", sender.getUsername())
                 .replace("{reported}", target.getUsername())
@@ -62,14 +77,9 @@ public class ReportCommand implements Command {
         plugin.getProxyServer().getAllPlayers().stream().filter(staff -> staff.hasPermission("reports.alert")).forEach(staff -> {
             staff.sendMessage(Util.color(staffMessage));
         });
-
-        sender.sendMessage(TextComponent.of("Staff have been alerted! Thank you for your report.").color(TextColor.RED));
-
-        if (plugin.getConfig().getBoolean("discord-webhook-enabled"))
-            this.sendDiscordWebHook(sender, target, args);
     }
 
-    private void sendDiscordWebHook(Player sender, Player target, String[] reason) {
+    private void sendDiscordWebHook(Player sender, Player target, String[] args) {
         final DiscordWebhook webHook = new DiscordWebhook(plugin.getConfig().getString("discord-webhook-url"));
         final DiscordWebhook.EmbedObject embed = new DiscordWebhook.EmbedObject();
 
@@ -77,7 +87,7 @@ public class ReportCommand implements Command {
         embed.setColor(Color.decode(plugin.getConfig().getString("discord-webhook-color")));
         embed.addField("Reporter: ", sender.getUsername(), false);
         embed.addField("Reported: ", target.getUsername(), false);
-        embed.addField("Reason: ", String.join(" ", Arrays.copyOfRange(reason, 1, reason.length)), false);
+        embed.addField("Reason: ", String.join(" ", Arrays.copyOfRange(args, 1, args.length)), false);
         embed.addField("Server: ", sender.getCurrentServer().get().getServerInfo().getName(), false);
         webHook.addEmbed(embed);
 
