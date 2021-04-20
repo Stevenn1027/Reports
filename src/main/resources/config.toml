@@ -1,5 +1,8 @@
-report-messaage = [
-    "{reporter} reported {reported}",
-    "Reason: {reason}",
-    "Test line"
-]
+#Use \n for new lines
+#Place holdesr are: {reporter} {reported} {server} {reason}
+report-message = "&a{reporter} reported {reported} \nReason: {reason} \nServer: {server}"
+
+# Discord webhook
+discord-webhook-enabled = false
+discord-webhook-url = ""
+discord-webhook-color = "#FFF"

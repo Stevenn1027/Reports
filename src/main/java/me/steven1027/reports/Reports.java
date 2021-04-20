@@ -10,7 +10,6 @@ import com.velocitypowered.api.plugin.annotation.DataDirectory;
 import com.velocitypowered.api.proxy.ProxyServer;
 import me.steven1027.reports.commands.ReportCommand;
 import org.slf4j.Logger;
-import org.tomlj.TomlParseResult;
 
 import java.io.File;
 import java.io.IOException;
@@ -30,30 +29,28 @@ public class Reports {
 
     private final ProxyServer server;
     private final Logger logger;
-    private final Path path;
-    private TomlParseResult config;
+    private final Toml config;
+    private final CommandManager commandManager;
+
 
     @Inject
-    public Reports(ProxyServer server, Logger logger, @DataDirectory Path path) {
+    public Reports(ProxyServer server, Logger logger, CommandManager commandManager, @DataDirectory Path path) {
         this.server = server;
         this.logger = logger;
-        this.path = path;
+        this.commandManager = commandManager;
+        this.config = loadConfig(path);
     }
 
     @Subscribe
     public void onProxyInitialization(ProxyInitializeEvent event) throws IOException {
-        final CommandManager commandManager = this.server.getCommandManager();
-        commandManager.register(new ReportCommand(this), "report");
-
-        this.loadConfig(path);
-        this.config = org.tomlj.Toml.parse(path);
+        this.commandManager.register(new ReportCommand(this), "report");
     }
 
     public ProxyServer getProxyServer() {
         return this.server;
     }
 
-    public TomlParseResult getConfig() {
+    public Toml getConfig() {
         return this.config;
     }
 
@@ -71,8 +68,9 @@ public class Reports {
                 } else {
                     file.createNewFile();
                 }
-            } catch (IOException e) {
-                e.printStackTrace();
+            } catch (IOException exception) {
+                exception.printStackTrace();
+                return null;
             }
         }
         return new Toml().read(file);

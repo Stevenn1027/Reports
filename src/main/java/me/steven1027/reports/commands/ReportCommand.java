@@ -4,10 +4,14 @@ import com.velocitypowered.api.command.Command;
 import com.velocitypowered.api.command.CommandSource;
 import com.velocitypowered.api.proxy.Player;
 import me.steven1027.reports.Reports;
+import me.steven1027.reports.util.DiscordWebhook;
+import me.steven1027.reports.util.Util;
 import net.kyori.text.TextComponent;
 import net.kyori.text.format.TextColor;
 import org.checkerframework.checker.nullness.qual.NonNull;
 
+import java.awt.*;
+import java.io.IOException;
 import java.util.*;
 
 public class ReportCommand implements Command {
@@ -49,18 +53,39 @@ public class ReportCommand implements Command {
             return;
         }
 
-        final String reportReason = String.join(" ", Arrays.copyOfRange(args, 1, args.length));
-        final String staffMessage = String.join("\n", plugin.getConfig().getArray("report-message").toJson())
+        final String staffMessage = plugin.getConfig().getString("report-message")
                 .replace("{reporter}", sender.getUsername())
                 .replace("{reported}", target.getUsername())
-                .replace("{reason}", reportReason);
+                .replace("{server}", sender.getCurrentServer().get().getServer().getServerInfo().getName())
+                .replace("{reason}", String.join(" ", Arrays.copyOfRange(args, 1, args.length)));
 
-        for (Player player : plugin.getProxyServer().getAllPlayers())
-            if (player.hasPermission("reports.alert")) {
-                player.sendMessage(TextComponent.of(staffMessage).color(TextColor.RED));
-            }
+        plugin.getProxyServer().getAllPlayers().stream().filter(staff -> staff.hasPermission("reports.alert")).forEach(staff -> {
+            staff.sendMessage(Util.color(staffMessage));
+        });
 
         sender.sendMessage(TextComponent.of("Staff have been alerted! Thank you for your report.").color(TextColor.RED));
+
+        if (plugin.getConfig().getBoolean("discord-webhook-enabled"))
+            this.sendDiscordWebHook(sender, target, args);
+    }
+
+    private void sendDiscordWebHook(Player sender, Player target, String[] reason) {
+        final DiscordWebhook webHook = new DiscordWebhook(plugin.getConfig().getString("discord-webhook-url"));
+        final DiscordWebhook.EmbedObject embed = new DiscordWebhook.EmbedObject();
+
+        embed.setTitle("**Report**");
+        embed.setColor(Color.decode(plugin.getConfig().getString("discord-webhook-color")));
+        embed.addField("Reporter: ", sender.getUsername(), false);
+        embed.addField("Reported: ", target.getUsername(), false);
+        embed.addField("Reason: ", String.join(" ", Arrays.copyOfRange(reason, 1, reason.length)), false);
+        embed.addField("Server: ", sender.getCurrentServer().get().getServerInfo().getName(), false);
+        webHook.addEmbed(embed);
+
+        try {
+            webHook.execute();
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
     }
 
 }
